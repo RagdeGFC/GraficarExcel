@@ -94,7 +94,7 @@
       padding: 8px;
       border: 1px solid #ddd;
       border-radius: 4px;
-      width: 200px;
+      width: 300px;
       font-size: 14px;
     }
 
@@ -141,6 +141,90 @@
     .hidden {
       display: none;
     }
+
+    /* Nuevo contenedor para alinear búsqueda y selector */
+    .search-and-select {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .input-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .input-group label {
+      width: 120px;
+      text-align: right;
+    }
+
+    .input-group .search-input,
+    .input-group select {
+      width: 300px;
+    }
+
+    .gauss-container {
+      margin: 20px auto;
+      padding: 20px;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .gauss-container h3 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 15px;
+    }
+
+    #gauss-plot {
+      width: 100%;
+      height: 300px;
+      margin: 0 auto;
+    }
+
+    .table-container {
+      margin-top: 20px;
+      overflow-x: auto;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    #data-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      font-size: 14px;
+    }
+
+    #data-table th,
+    #data-table td {
+      padding: 8px;
+      text-align: center;
+      border: 1px solid #ddd;
+    }
+
+    #data-table th {
+      background-color: #4a90e2;
+      color: white;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    #data-table tr:nth-child(even) {
+      background-color: #f8f9fa;
+    }
+
+    #data-table tr:hover {
+      background-color: #f0f4f8;
+    }
   </style>
 </head>
 
@@ -159,14 +243,41 @@
 
     <div id="loading-message" class="hidden">Cargando datos del Excel...</div>
 
-    <div id="data-container" class="hidden">
-      <div class="search-container">
-        <input type="text" id="test-search" class="search-input" placeholder="Buscar test..." />
+    <!-- Nueva sección para la gráfica de Gauss -->
+    <div class="gauss-container">
+      <h3>Distribución General de Tests</h3>
+      <div id="gauss-plot"></div>
+      <div class="table-container">
+        <table id="data-table">
+          <thead>
+            <tr>
+              <th>Test_name</th>
+              <th>LSL</th>
+              <th>USL</th>
+              <th>Target</th>
+              <th>Mean</th>
+              <th>Std</th>
+              <th>CP</th>
+              <th>CPK</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Los datos se llenarán dinámicamente -->
+          </tbody>
+        </table>
       </div>
+    </div>
 
-      <div class="controls">
-        <label for="process-selector">Seleccionar Test:</label>
-        <select id="process-selector"></select>
+    <div id="data-container" class="hidden">
+      <div class="search-and-select">
+        <div class="input-group">
+          <label for="test-search">Test_name:</label>
+          <input type="text" id="test-search" class="search-input" placeholder="" />
+        </div>
+        <div class="input-group">
+          <label for="process-selector">Seleccionar Test:</label>
+          <select id="process-selector"></select>
+        </div>
       </div>
 
       <div class="stats">
@@ -200,14 +311,49 @@
       const searchTerm = e.target.value.toLowerCase();
       const selector = document.getElementById('process-selector');
       const options = selector.options;
+      let firstMatch = null;
 
       for (let i = 0; i < options.length; i++) {
         const option = options[i];
         const text = option.text.toLowerCase();
-        if (text.includes(searchTerm) || searchTerm === '') {
-          option.style.display = '';
-        } else {
-          option.style.display = 'none';
+        // Extraer solo el Test_name que está entre paréntesis
+        const testName = text.match(/\((.*?)\)/);
+        if (testName) {
+          const name = testName[1].toLowerCase();
+          if (name.includes(searchTerm) || searchTerm === '') {
+            option.style.display = '';
+            if (!firstMatch && searchTerm !== '') {
+              firstMatch = option;
+            }
+          } else {
+            option.style.display = 'none';
+          }
+        }
+      }
+    });
+
+    // Agregar evento para el Enter
+    document.getElementById('test-search').addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') {
+        const searchTerm = e.target.value.toLowerCase();
+        const selector = document.getElementById('process-selector');
+        const options = selector.options;
+
+        // Buscar la primera coincidencia
+        for (let i = 0; i < options.length; i++) {
+          const option = options[i];
+          const text = option.text.toLowerCase();
+          const testName = text.match(/\((.*?)\)/);
+          if (testName) {
+            const name = testName[1].toLowerCase();
+            if (name.includes(searchTerm)) {
+              // Seleccionar esta opción
+              selector.value = option.value;
+              // Disparar el evento change para actualizar la gráfica
+              selector.dispatchEvent(new Event('change'));
+              break;
+            }
+          }
         }
       }
     });
