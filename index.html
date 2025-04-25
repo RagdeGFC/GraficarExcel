@@ -210,6 +210,13 @@
       border: 1px solid #ddd;
     }
 
+    #data-table th:first-child,
+    #data-table td:first-child {
+      width: 40px;
+      min-width: 40px;
+      max-width: 40px;
+    }
+
     #data-table th {
       background-color: #4a90e2;
       color: white;
@@ -251,6 +258,7 @@
         <table id="data-table">
           <thead>
             <tr>
+              <th>#</th>
               <th>Test_name</th>
               <th>LSL</th>
               <th>USL</th>
@@ -287,15 +295,15 @@
         </div>
         <div class="stat-box">
           <div class="stat-label">CPK</div>
-          <div id="std-value" class="stat-value">-</div>
+          <div id="cpk-value" class="stat-value">-</div>
         </div>
         <div class="stat-box">
           <div class="stat-label">Desviación Estándar</div>
-          <div id="cp-value" class="stat-value">-</div>
+          <div id="std-value" class="stat-value">-</div>
         </div>
         <div class="stat-box">
           <div class="stat-label">CP</div>
-          <div id="cpk-value" class="stat-value">-</div>
+          <div id="cp-value" class="stat-value">-</div>
         </div>
       </div>
 

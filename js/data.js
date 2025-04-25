@@ -204,62 +204,91 @@ function updateGaussPlot() {
 
 	// Calcular estadísticas generales
 	const allTests = Object.values(window.processData);
-	const means = allTests.map((test) => test.mean);
-	const stds = allTests.map((test) => test.std);
+	const allData = allTests.flatMap((test) => test.data);
 
-	// Calcular el rango para el eje X
-	const minMean = d3.min(means);
-	const maxMean = d3.max(means);
-	const range = maxMean - minMean;
-	const xDomain = [minMean - range * 0.1, maxMean + range * 0.1];
+	// Calcular la media y desviación estándar promedio
+	const avgMean = d3.mean(allData);
+	const avgStd = d3.deviation(allData);
+
+	// Calcular el rango para el eje X centrado en cero
+	const range = avgStd * 4;
+	const xDomain = [avgMean - range, avgMean + range];
 
 	// Crear escalas
 	const x = d3.scaleLinear().domain(xDomain).range([0, width]);
 
-	// Crear la curva de Gauss para cada test
-	const gaussianData = allTests.map((test) => {
-		const points = [];
-		const step = (xDomain[1] - xDomain[0]) / 100;
-		for (let x = xDomain[0]; x <= xDomain[1]; x += step) {
-			const y =
-				(1 / (test.std * Math.sqrt(2 * Math.PI))) *
-				Math.exp(-Math.pow(x - test.mean, 2) / (2 * Math.pow(test.std, 2)));
-			points.push([x, y]);
-		}
-		return points;
-	});
+	// Crear el histograma
+	const histogram = d3.histogram().domain(x.domain()).thresholds(x.ticks(30));
 
-	// Encontrar el máximo Y para la escala
-	const maxY = d3.max(gaussianData.flat(), (d) => d[1]);
+	const bins = histogram(allData);
 
-	// Escala Y
-	const y = d3.scaleLinear().domain([0, maxY]).range([height, 0]);
+	// Escala Y para el histograma
+	const y = d3
+		.scaleLinear()
+		.domain([0, d3.max(bins, (d) => d.length)])
+		.range([height, 0]);
+
+	// Dibujar barras del histograma
+	svg
+		.selectAll('rect')
+		.data(bins)
+		.enter()
+		.append('rect')
+		.attr('x', (d) => x(d.x0))
+		.attr('y', (d) => y(d.length))
+		.attr('width', (d) => Math.max(0, x(d.x1) - x(d.x0) - 1))
+		.attr('height', (d) => height - y(d.length))
+		.style('fill', '#4a90e2')
+		.style('opacity', 0.3);
+
+	// Crear la curva de Gauss
+	const points = [];
+	const step = (xDomain[1] - xDomain[0]) / 200;
+	for (let xVal = xDomain[0]; xVal <= xDomain[1]; xVal += step) {
+		const y =
+			(1 / (avgStd * Math.sqrt(2 * Math.PI))) *
+			Math.exp(-Math.pow(xVal - avgMean, 2) / (2 * Math.pow(avgStd, 2)));
+		points.push([xVal, y]);
+	}
+
+	// Escalar los puntos de la curva de Gauss para que coincida con la altura del histograma
+	const yMax = d3.max(points, (d) => d[1]);
+	const yScale = d3.max(bins, (d) => d.length) / yMax;
+	points.forEach((point) => (point[1] *= yScale));
 
 	// Crear la línea
 	const line = d3
 		.line()
 		.x((d) => x(d[0]))
-		.y((d) => y(d[1]));
+		.y((d) => y(d[1]))
+		.curve(d3.curveMonotoneX);
 
-	// Dibujar las curvas
-	gaussianData.forEach((points, i) => {
-		svg
-			.append('path')
-			.datum(points)
-			.attr('fill', 'none')
-			.attr('stroke', '#4a90e2')
-			.attr('stroke-width', 1)
-			.attr('stroke-opacity', 0.1)
-			.attr('d', line);
-	});
+	// Dibujar la curva
+	svg
+		.append('path')
+		.datum(points)
+		.attr('fill', 'none')
+		.attr('stroke', '#ff4444')
+		.attr('stroke-width', 2)
+		.attr('d', line);
 
 	// Agregar ejes
 	svg
 		.append('g')
 		.attr('transform', `translate(0,${height})`)
-		.call(d3.axisBottom(x));
+		.call(d3.axisBottom(x).ticks(10));
 
-	svg.append('g').call(d3.axisLeft(y));
+	svg.append('g').call(d3.axisLeft(y).ticks(5));
+
+	// Agregar línea vertical en la media
+	svg
+		.append('line')
+		.attr('x1', x(avgMean))
+		.attr('x2', x(avgMean))
+		.attr('y1', 0)
+		.attr('y2', height)
+		.attr('stroke', '#999')
+		.attr('stroke-dasharray', '3,3');
 }
 
 // Función para actualizar la tabla de datos
@@ -267,14 +296,15 @@ function updateDataTable() {
 	const tbody = document.querySelector('#data-table tbody');
 	tbody.innerHTML = '';
 
-	// Ordenar los tests por nombre
-	const sortedTests = Object.entries(window.processData).sort((a, b) =>
-		a[1].name.localeCompare(b[1].name),
+	// Ordenar los tests por número de test (no alfabéticamente)
+	const sortedTests = Object.entries(window.processData).sort(
+		(a, b) => a[1].testNumber - b[1].testNumber,
 	);
 
-	sortedTests.forEach(([key, test]) => {
+	sortedTests.forEach(([key, test], index) => {
 		const row = document.createElement('tr');
 		row.innerHTML = `
+			<td>${index + 1}</td>
 			<td>${test.name}</td>
 			<td>${test.lsl.toFixed(4)}</td>
 			<td>${test.usl.toFixed(4)}</td>
@@ -330,9 +360,9 @@ async function loadData() {
 				usl: parseFloat(row[4]) || 0, // Columna E: USL
 				target: parseFloat(row[5]) || 0, // Columna F: Target
 				mean: parseFloat(row[6]) || 0, // Columna G: Mean
-				std: parseFloat(row[7]) || 0, // Columna H: Std
-				cp: parseFloat(row[8]) || 0, // Columna I: Cp
-				cpk: parseFloat(row[9]) || 0, // Columna J: Cpk
+				std: parseFloat(row[5]) || 0, // Columna F: STDEV
+				cp: parseFloat(row[7]) || 0, // Columna H: Cp
+				cpk: parseFloat(row[8]) || 0, // Columna I: Cpk
 			};
 		});
 
@@ -401,11 +431,11 @@ function initializeSelector() {
 			document.getElementById('mean-value').textContent =
 				selectedProcess.mean.toFixed(4);
 			document.getElementById('std-value').textContent =
-				selectedProcess.cp.toFixed(4); // Cambiado de std a cp
+				selectedProcess.std.toFixed(4);
 			document.getElementById('cp-value').textContent =
-				selectedProcess.cpk.toFixed(4); // Cambiado de cp a cpk
+				selectedProcess.cp.toFixed(4);
 			document.getElementById('cpk-value').textContent =
-				selectedProcess.std.toFixed(4); // Cambiado de cpk a std
+				selectedProcess.cpk.toFixed(4);
 		}
 	});
 
