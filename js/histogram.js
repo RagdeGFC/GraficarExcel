@@ -1,3 +1,6 @@
+// Definición temporal de datasets hasta que tengamos los datos reales
+const datasets = window.processData || {};
+
 // Configuración del gráfico
 const margin = { top: 20, right: 30, bottom: 40, left: 50 };
 const width = 800 - margin.left - margin.right;
@@ -87,19 +90,37 @@ function updateHistogram(data, lsl, usl, target) {
 	svg.append('g').call(d3.axisLeft(y).ticks(10));
 }
 
-// Inicializar el selector de datasets
-const datasetSelector = document.getElementById('dataset-selector');
-Object.keys(datasets).forEach((dataset) => {
-	const option = document.createElement('option');
-	option.value = dataset;
-	option.textContent = dataset;
-	datasetSelector.appendChild(option);
-});
+// Inicializar cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', () => {
+	// Inicializar el selector de procesos
+	const processSelector = document.getElementById('process-selector');
+	if (processSelector) {
+		Object.keys(datasets).forEach((dataset) => {
+			const option = document.createElement('option');
+			option.value = dataset;
+			option.textContent = dataset;
+			processSelector.appendChild(option);
+		});
 
-// Event listener para el cambio de dataset
-datasetSelector.addEventListener('change', (e) => {
-	updateHistogram(e.target.value);
-});
+		// Event listener para el cambio de proceso
+		processSelector.addEventListener('change', (e) => {
+			const selectedData = datasets[e.target.value];
+			if (selectedData && Array.isArray(selectedData.data)) {
+				// Asegurarnos de que todos los datos sean números
+				const numericData = selectedData.data
+					.map(Number)
+					.filter((d) => !isNaN(d));
+				updateHistogram(numericData, selectedData.lsl, selectedData.usl);
+			}
+		});
 
-// Inicializar con el primer dataset
-updateHistogram(Object.keys(datasets)[0]);
+		// Inicializar con el primer dataset si hay datos
+		if (Object.keys(datasets).length > 0) {
+			const firstData = datasets[Object.keys(datasets)[0]];
+			if (firstData && Array.isArray(firstData.data)) {
+				const numericData = firstData.data.map(Number).filter((d) => !isNaN(d));
+				updateHistogram(numericData, firstData.lsl, firstData.usl);
+			}
+		}
+	}
+});

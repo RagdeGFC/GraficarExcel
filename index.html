@@ -199,8 +199,7 @@
     #data-table {
       width: 100%;
       border-collapse: collapse;
-      background: white;
-      font-size: 14px;
+      border-spacing: 0;
     }
 
     #data-table th,
@@ -210,27 +209,45 @@
       border: 1px solid #ddd;
     }
 
-    #data-table th:first-child,
-    #data-table td:first-child {
-      width: 40px;
-      min-width: 40px;
-      max-width: 40px;
-    }
-
     #data-table th {
       background-color: #4a90e2;
       color: white;
+      font-weight: bold;
       position: sticky;
       top: 0;
       z-index: 1;
     }
 
-    #data-table tr:nth-child(even) {
-      background-color: #f8f9fa;
+    #data-table tr:hover {
+      background-color: #f0f0f0;
+      cursor: pointer;
     }
 
-    #data-table tr:hover {
-      background-color: #f0f4f8;
+    #data-table tr.selected {
+      background-color: #e3f2fd;
+    }
+
+    /* Estilos para la barra de desplazamiento */
+    .table-container::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    .table-container::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .table-container::-webkit-scrollbar-thumb {
+      background: #888;
+      border-radius: 4px;
+    }
+
+    .table-container::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+
+    .table-container::-webkit-scrollbar-corner {
+      background: transparent;
     }
   </style>
 </head>
@@ -259,10 +276,9 @@
           <thead>
             <tr>
               <th>#</th>
-              <th>Test_name</th>
-              <th>LSL</th>
+              <th>TEST_NAME</th>
               <th>USL</th>
-              <th>Target</th>
+              <th>LSL</th>
               <th>Mean</th>
               <th>Std</th>
               <th>CP</th>

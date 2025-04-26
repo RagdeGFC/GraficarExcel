@@ -1,104 +1,7 @@
-// Estructura de datos para almacenar la información de los tests
-const processData = {
-	// Ejemplo de estructura que coincide con el Excel
-	Test1: {
-		testType: 'Type1',
-		measurements: [], // Array de mediciones
-		usl: 0, // Upper Specification Limit
-		lsl: 0, // Lower Specification Limit
-		stdDev: 0, // Desviación estándar
-		mean: 0, // Media
-		cp: 0, // Capacidad de proceso
-		cpk: 0, // Capacidad de proceso centrada
-	},
-	proceso1: {
-		name: 'Proceso de Manufactura A',
-		data: generateNormalData(100, 10, 2),
-		lsl: 5,
-		usl: 15,
-		target: 10,
-	},
-	proceso2: {
-		name: 'Proceso de Manufactura B',
-		data: generateNormalData(100, 50, 5),
-		lsl: 35,
-		usl: 65,
-		target: 50,
-	},
-	proceso3: {
-		name: 'Proceso de Manufactura C',
-		data: generateNormalData(100, 100, 10),
-		lsl: 70,
-		usl: 130,
-		target: 100,
-	},
-};
-
-const testData = {
-	'Prueba 1': {
-		data: [
-			10.2, 10.1, 10.3, 10.0, 9.9, 10.2, 10.1, 10.4, 10.2, 10.3, 10.1, 10.2,
-			10.0, 10.3, 10.1, 10.2, 10.4, 10.1, 10.2, 10.3, 9.8, 10.2, 10.1, 10.3,
-			10.2, 10.1, 10.0, 10.2, 10.3, 10.1,
-		],
-		lsl: 9.5,
-		usl: 10.5,
-		target: 10.0,
-	},
-	'Prueba 2': {
-		data: [
-			15.3, 15.4, 15.2, 15.1, 15.5, 15.3, 15.2, 15.4, 15.3, 15.2, 15.4, 15.3,
-			15.5, 15.2, 15.3, 15.4, 15.2, 15.3, 15.1, 15.4, 15.3, 15.2, 15.4, 15.5,
-			15.3, 15.2, 15.4, 15.3, 15.2, 15.4,
-		],
-		lsl: 14.8,
-		usl: 15.8,
-		target: 15.3,
-	},
-	'Prueba 3': {
-		data: [
-			20.1, 20.3, 20.2, 20.4, 20.1, 20.2, 20.3, 20.1, 20.2, 20.4, 20.2, 20.3,
-			20.1, 20.2, 20.4, 20.3, 20.2, 20.1, 20.3, 20.2, 20.4, 20.2, 20.1, 20.3,
-			20.2, 20.4, 20.1, 20.2, 20.3, 20.2,
-		],
-		lsl: 19.5,
-		usl: 20.5,
-		target: 20.0,
-	},
-};
-
-const datasets = {
-	'Proceso A': {
-		data: [
-			10.2, 10.1, 10.3, 10.0, 10.4, 10.2, 10.1, 10.3, 10.2, 10.1, 10.0, 10.2,
-			10.3, 10.1, 10.2, 10.4, 10.3, 10.2, 10.1, 10.2, 10.3, 10.1, 10.2, 10.0,
-			10.4, 10.2, 10.3, 10.1, 10.2, 10.3,
-		],
-		lsl: 9.8,
-		usl: 10.6,
-		target: 10.2,
-	},
-	'Proceso B': {
-		data: [
-			15.5, 15.3, 15.8, 15.4, 15.6, 15.5, 15.7, 15.4, 15.5, 15.6, 15.4, 15.5,
-			15.3, 15.6, 15.5, 15.8, 15.6, 15.5, 15.4, 15.5, 15.7, 15.5, 15.6, 15.4,
-			15.5, 15.3, 15.6, 15.5, 15.7, 15.5,
-		],
-		lsl: 15.0,
-		usl: 16.0,
-		target: 15.5,
-	},
-	'Proceso C': {
-		data: [
-			20.1, 20.4, 20.2, 20.3, 20.1, 20.2, 20.3, 20.1, 20.4, 20.2, 20.3, 20.1,
-			20.2, 20.4, 20.3, 20.2, 20.1, 20.3, 20.2, 20.1, 20.4, 20.2, 20.3, 20.1,
-			20.2, 20.3, 20.4, 20.2, 20.1, 20.3,
-		],
-		lsl: 19.8,
-		usl: 20.6,
-		target: 20.2,
-	},
-};
+// Variable global para almacenar los datos
+window.processData = {};
+// Variable para almacenar el primer Test_name
+window.firstTestName = '';
 
 function calculateHistogram(data, bins = 20) {
 	const min = Math.min(...data);
@@ -154,11 +57,6 @@ function calculateStatistics(measurements, lsl, usl) {
 	return { mean, stdDev, cp, cpk };
 }
 
-// Variable global para almacenar los datos
-window.processData = {};
-// Variable para almacenar el primer Test_name
-window.firstTestName = '';
-
 // Función para extraer números de una cadena de texto
 function extractNumbers(str) {
 	if (typeof str !== 'string') {
@@ -179,11 +77,16 @@ function extractNumbers(str) {
 
 // Función para crear la gráfica de Gauss general
 function updateGaussPlot() {
+	const selector = document.getElementById('process-selector');
+	const selectedTest = window.processData[selector.value];
+
+	if (!selectedTest) return;
+
 	// Limpiar el contenedor
 	d3.select('#gauss-plot').selectAll('*').remove();
 
 	// Configurar dimensiones
-	const margin = { top: 20, right: 30, bottom: 30, left: 40 };
+	const margin = { top: 40, right: 30, bottom: 40, left: 50 };
 	const width =
 		document.getElementById('gauss-plot').clientWidth -
 		margin.left -
@@ -202,31 +105,38 @@ function updateGaussPlot() {
 		.append('g')
 		.attr('transform', `translate(${margin.left},${margin.top})`);
 
-	// Calcular estadísticas generales
-	const allTests = Object.values(window.processData);
-	const allData = allTests.flatMap((test) => test.data);
+	// Usar los valores existentes del test
+	const mean = selectedTest.mean;
+	const std = selectedTest.std;
+	const lsl = selectedTest.lsl;
+	const usl = selectedTest.usl;
 
-	// Calcular la media y desviación estándar promedio
-	const avgMean = d3.mean(allData);
-	const avgStd = d3.deviation(allData);
+	// Calcular el rango para el eje X usando el valor absoluto más alto
+	const maxAbsValue = Math.max(Math.abs(lsl), Math.abs(usl));
+	const xMin = -maxAbsValue;
+	const xMax = maxAbsValue;
 
-	// Calcular el rango para el eje X centrado en cero
-	const range = avgStd * 4;
-	const xDomain = [avgMean - range, avgMean + range];
+	// Crear escala X centrada en 0
+	const x = d3.scaleLinear().domain([xMin, xMax]).range([0, width]);
 
-	// Crear escalas
-	const x = d3.scaleLinear().domain(xDomain).range([0, width]);
+	// Centrar los datos respecto a la media
+	const centeredData = selectedTest.data.map((d) => d - mean);
 
-	// Crear el histograma
-	const histogram = d3.histogram().domain(x.domain()).thresholds(x.ticks(30));
+	// Crear el histograma con bins específicos
+	const binWidth = (xMax - xMin) / 20; // Dividir en 20 bins
+	const histogram = d3
+		.histogram()
+		.domain(x.domain())
+		.thresholds(d3.range(xMin, xMax + binWidth, binWidth));
 
-	const bins = histogram(allData);
+	const bins = histogram(centeredData);
 
-	// Escala Y para el histograma
-	const y = d3
-		.scaleLinear()
-		.domain([0, d3.max(bins, (d) => d.length)])
-		.range([height, 0]);
+	// Calcular la frecuencia máxima para el eje Y
+	const maxFrequency = d3.max(bins, (d) => d.length);
+	const yMax = Math.ceil(maxFrequency / 10) * 10; // Redondear a la decena superior
+
+	// Escala Y para frecuencias
+	const y = d3.scaleLinear().domain([0, yMax]).range([height, 0]);
 
 	// Dibujar barras del histograma
 	svg
@@ -238,57 +148,95 @@ function updateGaussPlot() {
 		.attr('y', (d) => y(d.length))
 		.attr('width', (d) => Math.max(0, x(d.x1) - x(d.x0) - 1))
 		.attr('height', (d) => height - y(d.length))
-		.style('fill', '#4a90e2')
-		.style('opacity', 0.3);
+		.style('fill', '#7fbfb0')
+		.style('opacity', 1);
 
-	// Crear la curva de Gauss
+	// Crear puntos para la curva de Gauss
 	const points = [];
-	const step = (xDomain[1] - xDomain[0]) / 200;
-	for (let xVal = xDomain[0]; xVal <= xDomain[1]; xVal += step) {
-		const y =
-			(1 / (avgStd * Math.sqrt(2 * Math.PI))) *
-			Math.exp(-Math.pow(xVal - avgMean, 2) / (2 * Math.pow(avgStd, 2)));
-		points.push([xVal, y]);
+	const step = (xMax - xMin) / 100;
+	for (let xVal = xMin; xVal <= xMax; xVal += step) {
+		// Calcular la altura de la curva normal
+		const yVal =
+			(1 / (std * Math.sqrt(2 * Math.PI))) *
+			Math.exp(-Math.pow(xVal, 2) / (2 * Math.pow(std, 2)));
+		points.push([xVal, yVal]);
 	}
 
-	// Escalar los puntos de la curva de Gauss para que coincida con la altura del histograma
-	const yMax = d3.max(points, (d) => d[1]);
-	const yScale = d3.max(bins, (d) => d.length) / yMax;
-	points.forEach((point) => (point[1] *= yScale));
+	// Escalar la curva para que coincida con la altura del histograma
+	const yMaxCurve = d3.max(points, (d) => d[1]);
+	const scaleFactor = yMax / yMaxCurve;
+	points.forEach((point) => (point[1] *= scaleFactor));
 
-	// Crear la línea
+	// Dibujar la curva de Gauss
 	const line = d3
 		.line()
 		.x((d) => x(d[0]))
 		.y((d) => y(d[1]))
-		.curve(d3.curveMonotoneX);
+		.curve(d3.curveBasis);
 
-	// Dibujar la curva
 	svg
 		.append('path')
 		.datum(points)
 		.attr('fill', 'none')
-		.attr('stroke', '#ff4444')
-		.attr('stroke-width', 2)
+		.attr('stroke', 'black')
+		.attr('stroke-width', 1.5)
+		.attr('stroke-dasharray', '3,3')
 		.attr('d', line);
 
+	// Agregar líneas LSL y USL
+	const addLimit = (value, label, color) => {
+		const centeredValue = value - mean;
+		svg
+			.append('line')
+			.attr('x1', x(centeredValue))
+			.attr('x2', x(centeredValue))
+			.attr('y1', 0)
+			.attr('y2', height)
+			.attr('stroke', color)
+			.attr('stroke-width', 1.5)
+			.attr('stroke-dasharray', '3,3');
+
+		svg
+			.append('text')
+			.attr('x', x(centeredValue))
+			.attr('y', -5)
+			.attr('text-anchor', 'middle')
+			.attr('fill', color)
+			.text(`${label} (${value.toFixed(2)})`);
+	};
+
+	// Agregar LSL, USL
+	addLimit(lsl, 'LSL', 'red');
+	addLimit(usl, 'USL', 'red');
+
 	// Agregar ejes
+	// Eje X
 	svg
 		.append('g')
 		.attr('transform', `translate(0,${height})`)
-		.call(d3.axisBottom(x).ticks(10));
+		.call(d3.axisBottom(x).ticks(10).tickFormat(d3.format('.1f'))); // Un decimal
 
-	svg.append('g').call(d3.axisLeft(y).ticks(5));
+	// Eje Y (frecuencias)
+	svg.append('g').call(d3.axisLeft(y).ticks(5).tickFormat(d3.format('d'))); // Números enteros
 
-	// Agregar línea vertical en la media
+	// Línea base
 	svg
 		.append('line')
-		.attr('x1', x(avgMean))
-		.attr('x2', x(avgMean))
-		.attr('y1', 0)
+		.attr('x1', x(xMin))
+		.attr('x2', x(xMax))
+		.attr('y1', height)
 		.attr('y2', height)
-		.attr('stroke', '#999')
-		.attr('stroke-dasharray', '3,3');
+		.attr('stroke', 'black')
+		.attr('stroke-width', 1);
+
+	// Agregar título
+	svg
+		.append('text')
+		.attr('x', width / 2)
+		.attr('y', -margin.top / 2)
+		.attr('text-anchor', 'middle')
+		.style('font-size', '14px')
+		.text(`Distribución Normal para ${selectedTest.name}`);
 }
 
 // Función para actualizar la tabla de datos
@@ -306,14 +254,31 @@ function updateDataTable() {
 		row.innerHTML = `
 			<td>${index + 1}</td>
 			<td>${test.name}</td>
-			<td>${test.lsl.toFixed(4)}</td>
-			<td>${test.usl.toFixed(4)}</td>
-			<td>${test.target.toFixed(4)}</td>
-			<td>${test.mean.toFixed(4)}</td>
-			<td>${test.std.toFixed(4)}</td>
-			<td>${test.cp.toFixed(4)}</td>
-			<td>${test.cpk.toFixed(4)}</td>
+			<td>${test.lsl !== null ? test.lsl.toFixed(4) : '-'}</td>
+			<td>${test.usl !== null ? test.usl.toFixed(4) : '-'}</td>
+			<td>${test.mean !== null ? test.mean.toFixed(4) : '-'}</td>
+			<td>${test.std !== null ? test.std.toFixed(4) : '-'}</td>
+			<td>${test.cp !== null ? test.cp.toFixed(4) : '-'}</td>
+			<td>${test.cpk !== null ? test.cpk.toFixed(4) : '-'}</td>
 		`;
+
+		// Agregar evento de clic a la fila
+		row.addEventListener('click', () => {
+			// Actualizar el selector
+			const selector = document.getElementById('process-selector');
+			selector.value = key;
+
+			// Disparar el evento change para actualizar las gráficas
+			const event = new Event('change');
+			selector.dispatchEvent(event);
+
+			// Resaltar la fila seleccionada
+			tbody
+				.querySelectorAll('tr')
+				.forEach((tr) => tr.classList.remove('selected'));
+			row.classList.add('selected');
+		});
+
 		tbody.appendChild(row);
 	});
 }
@@ -356,13 +321,12 @@ async function loadData() {
 				testNumber: index + 1,
 				name: testName,
 				data: measurements,
-				lsl: parseFloat(row[3]) || 0, // Columna D: LSL
-				usl: parseFloat(row[4]) || 0, // Columna E: USL
-				target: parseFloat(row[5]) || 0, // Columna F: Target
-				mean: parseFloat(row[6]) || 0, // Columna G: Mean
-				std: parseFloat(row[5]) || 0, // Columna F: STDEV
-				cp: parseFloat(row[7]) || 0, // Columna H: Cp
-				cpk: parseFloat(row[8]) || 0, // Columna I: Cpk
+				usl: parseFloat(row[3]), // USL de columna D
+				lsl: parseFloat(row[4]), // LSL de columna E
+				std: parseFloat(row[5]), // STDEV de columna F
+				mean: parseFloat(row[6]), // MEAN de columna G
+				cp: parseFloat(row[7]), // Cp de columna H
+				cpk: parseFloat(row[8]), // Cpk de columna I
 			};
 		});
 
@@ -426,6 +390,7 @@ function initializeSelector() {
 				selectedProcess.usl,
 				selectedProcess.target,
 			);
+			updateGaussPlot();
 
 			// Actualizar valores estadísticos con los títulos correctos
 			document.getElementById('mean-value').textContent =
@@ -451,49 +416,13 @@ function initializeSelector() {
 // Cargar los datos cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', loadData);
 
-// Función para generar datos con distribución normal
-function generateNormalData(n, mean, std) {
-	const data = [];
-	for (let i = 0; i < n; i++) {
-		// Usando el método Box-Muller para generar números aleatorios con distribución normal
-		const u1 = Math.random();
-		const u2 = Math.random();
-		const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
-		data.push(mean + std * z);
-	}
-	return data;
-}
-
-// Generar 639 tests con diferentes parámetros
-window.processData = {};
-
-for (let i = 1; i <= 639; i++) {
-	// Generar parámetros aleatorios para cada test
-	const mean = Math.random() * 100 + 50; // Media entre 50 y 150
-	const std = Math.random() * 5 + 1; // Desviación estándar entre 1 y 6
-	const target = mean; // El target será igual a la media
-	const lsl = mean - 3 * std; // LSL a 3 desviaciones estándar por debajo
-	const usl = mean + 3 * std; // USL a 3 desviaciones estándar por arriba
-
-	// Crear nombre de test aleatorio tipo fb0401, fb0702, etc.
-	const testName = `fb${String(Math.floor(Math.random() * 99)).padStart(
-		2,
-		'0',
-	)}${String(Math.floor(Math.random() * 99)).padStart(2, '0')}`;
-
-	window.processData[`Test ${i}`] = {
-		testNumber: i,
-		name: testName,
-		data: generateNormalData(100, mean, std),
-		lsl: lsl,
-		usl: usl,
-		target: target,
-		mean: mean,
-		std: std,
-		cp: (usl - lsl) / (6 * std),
-		cpk: Math.min((usl - mean) / (3 * std), (mean - lsl) / (3 * std)),
-	};
-}
-
 // Inicializar cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', initializeSelector);
+
+// Agregar manejador para el input de archivo
+document.addEventListener('DOMContentLoaded', () => {
+	const fileInput = document.querySelector('input[type="file"]');
+	if (fileInput) {
+		fileInput.addEventListener('change', loadData);
+	}
+});
